@@ -1,41 +1,127 @@
-import  React , { Component } from  'react';
-import CoolTabs from 'react-cool-tabs';
+import React, { Component } from "react";
+import glamorous from "glamorous";
 
-class Content1 extends Component {
-  render() {
-    return <div >
-      this is Content1
-    </div>
-  }
-}
-class Content2 extends Component {
-  render() {
-    return <div >
-      this is Content2
-    </div>
-  }
-}
+import * as TabsContext from "./TabsContext";
+import Tab from "./Tab";
 
-export  default  class  Example  extends  React.Component {
-render() {
-   return (
-     <div>
-	     <CoolTabs
-	       tabKey={'1'}
-	       style={{ width:  550, height:  500, background:  'white' }}
-	       activeTabStyle={{ background:  'red', color:  'white' }}
-	       unActiveTabStyle={{ background:  'green', color:  'black' }}
-	       activeLeftTabBorderBottomStyle={{ background:  'blue', height:  4 }}
-	       activeRightTabBorderBottomStyle={{ background:  'yellow', height:  4 }}
-	       tabsBorderBottomStyle={{ background:  'orange', height:  4 }}
-	       leftContentStyle={{ background:  'lightgreen' }}
-	       rightContentStyle={{ background:  'lightblue' }}
-	       leftTabTitle={'Left title'}
-	       rightTabTitle={'Right title'}
-	       leftContent={<Content1/>}
-	       rightContent={<Content2/>}
-	       contentTransitionStyle={'transform 0.6s ease-in'}
-	       borderTransitionStyle={'all 0.6s ease-in'}/>
-     </div>
+const ListTabs = glamorous.ul({
+  paddingLeft: 0,
+  listStyle: "none",
+  margin: 0
+});
+
+const TabTitleItem = glamorous.li(
+  {
+    display: "inline-block",
+    paddingRight: 5,
+    paddingLeft: 5,
+    transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+    padding: "0px 20px",
+    cursor: "pointer",
+    opacity: "0.4",
+    ":hover": {
+      opacity: 1
+    }
+  },
+  props => {
+    return (
+      props.isActiveTab && {
+        transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+        cursor: "default",
+        opacity: 1
+      }
+    );
+  }
 );
-}}
+
+const ActiveTabBorder = glamorous.div(
+  {
+    height: 2,
+    backgroundColor: "#0088dd",
+    position: "absolute",
+    bottom: 0,
+    transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+    willChange: "left, width"
+  },
+  props => {
+    return (
+      props.activeTabElement && {
+        width: props.activeTabElement.offsetWidth,
+        left: props.activeTabElement.offsetLeft
+      }
+    );
+  }
+);
+
+const TabAnchorItem = glamorous.a({
+  textTransform: "capitalize",
+  color: "#000000",
+  fontWeight: 60,
+  fontSize: 15
+});
+
+const TabsContainer = glamorous.div({
+  position: "relative",
+  borderBottom: "1px solid #dfdfdf"
+});
+
+const ReactTabs = glamorous.div({
+  position: "realative"
+});
+
+class Tabs extends Component {
+  static Tab = Tab;
+
+  state = {
+    tabsElements: []
+  };
+
+  render() {
+    return (
+      <TabsContext.TabProvider activeTab={this.props.activeTab}>
+        <TabsContext.TabConsumer>
+          {value => (
+            <ReactTabs>
+              <TabsContainer>
+                <ListTabs>
+                  {value.context.tabs.map((tab, index) => (
+                    <TabTitleItem
+                      key={index}
+                      onClick={value.context.onClick(tab)}
+                      id={tab.id}
+                      innerRef={tabElement => {
+                        if (!this.state.tabsElements[tab.id]) {
+                          this.setState((prevState, props) => {
+                            const tabsElements = prevState.tabsElements;
+                            tabsElements[tab.id] = tabElement;
+
+                            return {
+                              tabsElements
+                            };
+                          });
+                        }
+                      }}
+                      isActiveTab={value.context.activeTab.id === tab.id}
+                    >
+                      <TabAnchorItem>{tab.title}</TabAnchorItem>
+                    </TabTitleItem>
+                  ))}
+                </ListTabs>
+
+                <ActiveTabBorder
+                  activeTabElement={
+                    this.state.tabsElements[value.context.activeTab.id]
+                  }
+                />
+              </TabsContainer>
+
+              {this.props.children}
+            </ReactTabs>
+          )}
+        </TabsContext.TabConsumer>
+      </TabsContext.TabProvider>
+    );
+  }
+}
+
+export default Tabs;
